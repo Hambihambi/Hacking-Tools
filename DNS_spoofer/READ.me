@@ -1,5 +1,16 @@
-On the machine that is performing the MITM attack, make a queue of the web requests with the following command:
+IPTABLES basics:
+Within tables, rules are grouped into sets called chains. Common built-in chains include:
+
+INPUT: For packets coming to the local system.
+OUTPUT: For packets leaving the local system.
+FORWARD: For packets routed through the system (used in routers).
+
+Rules in chains are processed sequentially; when a packet matches a rule, the associated target action is executed, which could be to accept, drop, reject, or pass the packet to another chain.
+
+USAGE of the script:
+On the machine that is performing the MITM attack, make a queue of the web requests, than trap packets using the script. It will only forward packets to NetfilterQueue it they are coming from a different machine.
+For this purpose, use the following command:
 
 `iptables -I FORWARD -j NFQUEUE --queue-num 1337`
 
-than trap packets using the script. It will only forward packets to NetfilterQueue it they are coming from a different machine.
+
