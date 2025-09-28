@@ -1,0 +1,5 @@
+On the machine that is performing the MITM attack, make a queue of the web requests with the following command:
+
+`iptables -I FORWARD -j NFQUEUE --queue-num 1337`
+
+than trap packets using the script.
