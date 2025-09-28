@@ -2,4 +2,4 @@ On the machine that is performing the MITM attack, make a queue of the web reque
 
 `iptables -I FORWARD -j NFQUEUE --queue-num 1337`
 
-than trap packets using the script.
+than trap packets using the script. It will only forward packets to NetfilterQueue it they are coming from a different machine.
