@@ -72,7 +72,8 @@ if __name__ == "__main__":
             
             if not (success1 and success2):
                 print("[!] Some spoof packets failed to send due to MAC resolution failures.")
-
+                sys.exit(1)
+                
             time.sleep(2)
 
     except KeyboardInterrupt:
