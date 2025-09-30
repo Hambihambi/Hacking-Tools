@@ -19,7 +19,7 @@ def root_check():
     if os.geteuid() != 0:
         sys.exit("[!] This script must run as root")
     else:
-        print("[*] Welcome to the packet sniffer.")
+        print("[*] Welcome to the Packet Sniffer.")
         
 def sniff(interface="eth0"):
     scapy.sniff(iface=interface, store=False, prn=packet_processer)
