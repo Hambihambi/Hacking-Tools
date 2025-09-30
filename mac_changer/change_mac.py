@@ -1,46 +1,45 @@
 #!/usr/bin/env python3
 
 import subprocess
-import optparse
+import argparse
 import re
+import os
+import sys
 
+def root_check():
+    if os.geteuid() != 0:
+        sys.exit("[!] This script must run as root")
 
-def get_optsandargs():
-    parser = optparse.OptionParser()
-    parser.add_option('-i', '--interface', dest='interface', help='interface to change the MAC address of')
-    parser.add_option('-m', '--mac', dest='new_mac', help='MAC address to change to')
-    (options, arguments) = parser.parse_args()
+def get_args():
+    parser = argparse.ArgumentParser(description="Change MAC address of a network interface")
+    parser.add_argument("-i", "--interface", required=True, help="Interface to change the MAC address of")
+    parser.add_argument("-m", "--mac", required=True, help="MAC address to change to")
+    return parser.parse_args()
 
-    if not options.interface:
-        parser.error('Specify an interface')
-    elif not options.new_mac:
-        parser.error('Enter new MAC address')
-    return options
-
+def validate_mac(mac):
+    if not re.fullmatch(r"([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}", mac):
+        sys.exit("[!] Invalid MAC address format")
 
 def change_mac(interface, new_mac):
-    print(f'Changing MAC address of {interface}')
-    subprocess.call(['ifconfig', interface, 'down'])
-    subprocess.call(['ifconfig', interface, 'hw', 'ether', new_mac])
-    subprocess.call(['ifconfig', interface, 'up'])
-
+    subprocess.run(["ip", "link", "set", "dev", interface, "down"], check=True)
+    subprocess.run(["ip", "link", "set", "dev", interface, "address", new_mac], check=True)
+    subprocess.run(["ip", "link", "set", "dev", interface, "up"], check=True)
 
 def get_current_mac(interface):
-    ifconfig_result = subprocess.check_output(['ifconfig', interface])
-    mac_address_search_result = re.search(r"\w\w:\w\w:\w\w:\w\w:\w\w:\w\w", str(ifconfig_result))
+    result = subprocess.check_output(["ip", "link", "show", interface], encoding="utf-8")
+    match = re.search(r"([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}", result)
+    return match.group(0) if match else None
 
-    if mac_address_search_result:
-        return mac_address_search_result.group(0)
+if __name__ == "__main__":
+    root_check()
+    args = get_args()
+    validate_mac(args.mac)
+
+    print(f"[+] Current MAC of {args.interface}: {get_current_mac(args.interface)}")
+    change_mac(args.interface, args.mac)
+    new_mac = get_current_mac(args.interface)
+
+    if new_mac == args.mac:
+        print(f"[*] MAC address of {args.interface} changed successfully to {new_mac}")
     else:
-        print('Could not read MAC address')
-
-
-options = get_optsandargs()
-current_mac = get_current_mac(options.interface)
-print(f'The current MAC address of {options.interface} is {current_mac}')
-change_mac(options.interface, options.new_mac)
-current_mac = get_current_mac(options.interface)
-if current_mac == options.new_mac:
-    print(f'MAC address of {options.interface} changed to {current_mac} successfully')
-else:
-    print('Could not change MAC address')
+        print("[!] Failed to change MAC address")
