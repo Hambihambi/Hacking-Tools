@@ -78,7 +78,12 @@ if __name__ == "__main__":
 
     except KeyboardInterrupt:
         print("\n[+] Detected User Interruption ... Resetting ARP table ... Please wait.")
-        restore_arp(victim_ip, gateway_ip)
-        restore_arp(gateway_ip, victim_ip)
+        success3 = restore_arp(victim_ip, gateway_ip)
+        success4 = restore_arp(gateway_ip, victim_ip)
+        
+        if not (success3 and success4):
+            print("[!] Some restore packets failed to send due to MAC resolution failures.")
+            sys.exit(1)
+
         time.sleep(2)
         print("[*] ARP table restored. Exiting.")
