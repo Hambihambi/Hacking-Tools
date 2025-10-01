@@ -1,0 +1,10 @@
+Typical MITM ARP spoofing tools or implementations include packet forwarding enabled at the OS level or explicitly intercept and forward packets in code.
+The script currently does ARP spoofing but has no mechanism to forward or relay the intercepted packets from one interface or address to the other.
+
+To achieve full MITM behavior, enable IP forwarding on the attacker machine:
+
+'echo 1 > /proc/sys/net/ipv4/ip_forward'
+
+DISCLAIMER:
+Only use this script in environments and situations where you have explicit, legal permission.
+Unauthorized ARP spoofing, packet interception, or tampering is illegal and unethical.
