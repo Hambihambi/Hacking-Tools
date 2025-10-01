@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 import subprocess
 import argparse
 import re
@@ -36,7 +35,12 @@ if __name__ == "__main__":
     validate_mac(args.mac)
 
     print(f"[+] Current MAC of {args.interface}: {get_current_mac(args.interface)}")
-    change_mac(args.interface, args.mac)
+
+    try:
+        change_mac(args.interface, args.mac)
+    except Exception as e:
+        print(f"[!] Could not change MAC, error: {e}")
+
     new_mac = get_current_mac(args.interface)
 
     if new_mac == args.mac:
