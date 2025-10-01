@@ -79,7 +79,6 @@ if __name__ == "__main__":
 
             if not (success1 and success2):
                 print("[!] Some spoof packets failed to send due to MAC resolution failures.")
-                sys.exit(1)
 
             time.sleep(2)
 
@@ -90,7 +89,6 @@ if __name__ == "__main__":
 
         if not (success3 and success4):
             print("[!] Some restore packets failed to send due to MAC resolution failures.")
-            sys.exit(1)
 
         time.sleep(2)
         print("[*] ARP table restored. Exiting.")
