@@ -5,6 +5,9 @@ To achieve full MITM behavior, enable IP forwarding on the attacker machine:
 
 'echo 1 > /proc/sys/net/ipv4/ip_forward'
 
+ By default, IP forwarding is disabled (set to 0), meaning the system will not forward packets between interfaces.
+ The value can be checked using cat /proc/sys/net/ipv4/ip_forward or sysctl net.ipv4.ip_forward.
+
 DISCLAIMER:
 Only use this script in environments and situations where you have explicit, legal permission.
 Unauthorized ARP spoofing, packet interception, or tampering is illegal and unethical.
