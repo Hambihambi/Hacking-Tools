@@ -13,11 +13,13 @@ def root_check():
         print("[*] Welcome to the ARP Spoofer.")
 
 def toggle_forwarding():
-    toggle = subprocess.run(["cat", "/proc/sys/net/ipv4/ip_forward"], capture_output=True, text=True, check=True)
-    if toggle.stdout == "0":
-        subprocess.run(["echo 1 > /proc/sys/net/ipv4/ip_forward"], shell=True, check=True)
-    else:
-        subprocess.run(["echo 0 > /proc/sys/net/ipv4/ip_forward"], shell=True, check=True)
+    with open('/proc/sys/net/ipv4/ip_forward', 'r') as f:
+        current_value = int(f.read().strip())
+
+    new_value = '1\n' if current_value == 0 else '0\n'
+
+    with open('/proc/sys/net/ipv4/ip_forward', 'w') as f:
+        f.write(new_value)
 
 packet_count = 0
 
