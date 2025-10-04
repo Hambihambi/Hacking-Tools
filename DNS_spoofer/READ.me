@@ -20,9 +20,11 @@ Rules in chains are processed sequentially. When a packet matches a rule, the as
 FORWARD processes all incoming packets from the network, outside of localhost. OUTPUT and INPUT processes all packets coming from localhost.
 
 USAGE of the script:
-The script handles iptables commands automatically, but it is hardcoded to work in a test environment. You need to rewrite the subprocess lines corresponding to the following:
+The script handles iptables commands automatically, but it is hardcoded to work in a test environment. You need to comment the current subprocess lines and uncomment the ome corresponding to the following:
 
-`iptables -I FORWARD -j NFQUEUE --queue-num 1337`
+'iptables -I FORWARD -j NFQUEUE --queue-num 1337'
+
+You also have to be in a MITM situation to gain benefits from the above changes, and change the servers IP the script redirects to.
 
 To clean up, use:
 
