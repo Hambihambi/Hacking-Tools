@@ -6,16 +6,20 @@ OUTPUT: For packets leaving the local system.
 FORWARD: For packets routed through the system (used in routers).
 
 Rules in chains are processed sequentially; when a packet matches a rule, the associated target action is executed, which could be to accept, drop, reject, or pass the packet to another chain.
+FORWARD processes all incoming packets from the network, outside of localhost. OUTPUT and INPUT processes all packets coming from localhost.
 
 USAGE of the script:
-On the machine that is performing the MITM attack, make a queue of the web requests, than trap packets using the script. It will only forward packets to NetfilterQueue it they are coming from a different machine.
-For this purpose, use the following command:
+The script handles iptables commands automatically, but it is hardcoded to work in a test environment. You need to rewrite the subprocess lines corresponding to the following:
 
 `iptables -I FORWARD -j NFQUEUE --queue-num 1337`
 
 To clean up, use:
 
 'iptables -D FORWARD -j NFQUEUE --queue-num 1337'
+or
+'iptables --flush'
+
+The script automatically resets iptables rules by flushing them.
 
 DISCLAIMER:
 Only use this script in environments and situations where you have explicit, legal permission.
