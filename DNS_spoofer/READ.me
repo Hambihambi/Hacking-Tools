@@ -1,3 +1,14 @@
+DISCLAIMER:
+Only use this script in environments and situations where you have explicit, legal permission.
+Unauthorized packet spoofing, interception, or tampering is illegal and unethical.
+
+DNS over HTTPS (DoH):
+Modern browsers like Firefox and Chrome use DNS over HTTPS by default,
+which bypasses traditional DNS queries and sends encrypted DNS requests directly to DoH providers like Cloudflare.
+The script cannot intercept these encrypted DNS queries, so the browser gets the real IP address.
+Therefore, the script only works if https enforcing and DNS over HTTPS are turned off.
+So the script was only for practicing Python, Netwrorking fundamentals and having fun creating it. We can only deploy it in a lab environment (or a very old production one, wiith explicit permissions of course).
+
 IPTABLES basics:
 Within tables, rules are grouped into sets called chains. Common built-in chains include:
 
@@ -5,7 +16,7 @@ INPUT: For packets coming to the local system.
 OUTPUT: For packets leaving the local system.
 FORWARD: For packets routed through the system (used in routers).
 
-Rules in chains are processed sequentially; when a packet matches a rule, the associated target action is executed, which could be to accept, drop, reject, or pass the packet to another chain.
+Rules in chains are processed sequentially. When a packet matches a rule, the associated target action is executed, which could be to accept, drop, reject, or pass the packet to another chain.
 FORWARD processes all incoming packets from the network, outside of localhost. OUTPUT and INPUT processes all packets coming from localhost.
 
 USAGE of the script:
@@ -20,7 +31,3 @@ or
 'iptables --flush'
 
 The script automatically resets iptables rules by flushing them.
-
-DISCLAIMER:
-Only use this script in environments and situations where you have explicit, legal permission.
-Unauthorized packet spoofing, interception, or tampering is illegal and unethical.
