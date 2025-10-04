@@ -17,14 +17,14 @@ def iptable_insert():
         or
         subprocess.run(['iptables', '-I', 'FORWARD', '-j', 'NFQUEUE', '--queue-num', '1337'], check=True)
         '''
-        print("[*] Iptables forwarding rule inserted")
+        print("[*] Iptables intercepting rule inserted")
     except Exception as e:
         print(f"[!] Error inserting iptables rule: {e}")
 
 def iptable_flush():
     try:
         subprocess.run(['iptables', '--flush'], check=True)
-        print("[*] Iptables forwarding rule deleted")
+        print("[*] Iptables rules flushed")
     except Exception as e:
         print(f"[!] Error flushing iptables: {e}")
 
