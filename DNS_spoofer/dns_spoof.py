@@ -56,6 +56,7 @@ def process_packet(packet):
     packet.accept()
 
 if __name__ == "__main__":
+    root_check()
     iptable_insert()
 
     # create the object, bind to the iptables command and run
