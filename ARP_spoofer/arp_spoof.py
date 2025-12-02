@@ -57,7 +57,7 @@ def spoof_arp(target_ip, spoof_ip):
 
     packet_count += 1
 
-    print(f"\r[*] Sending spoofed ARP packet to {victim_ip} and {gateway_ip}. Total packets sent: {packet_count}", end="", flush=True)
+    print(f"\r[*] Sending spoofed ARP packet to {victim_ip} and {gateway_ip}. Press Ctrl+C to stop. Total packets sent: {packet_count}", end="", flush=True)
     return True
 
 def restore_arp(destination_ip, source_ip):
