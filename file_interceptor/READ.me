@@ -31,3 +31,5 @@ or
 'iptables --flush'
 
 The script automatically resets iptables rules by flushing them.
+
+The script specifically checks dport == 8080 and sport == 8080. This assumes you are running Bettercap or an SSLstrip proxy that redirects traffic to port 8080. If you are just testing this against a standard HTTP website without a proxy tool, you should change 8080 to 80.
