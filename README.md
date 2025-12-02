@@ -1,5 +1,5 @@
 # Hacking-Tools
-100% handwritten code, no AI was harmed during the process.
+100% handwritten code, no AI was harmed during the process. Yes it took long. Yes it was fun.
 
 This repository contains hacking and penetration testing tools strictly for educational and authorized security assessment purposes. By using or contributing to this project, you agree to follow all ethical guidelines and legal boundaries.
 
