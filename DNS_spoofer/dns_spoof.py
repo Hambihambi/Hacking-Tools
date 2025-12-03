@@ -8,12 +8,12 @@ except ImportError as e:
     print(f"    Specific missing module: {e}")
     print("\n[*] Please follow these steps to fix the environment:")
     print("\n    1. Create the virtual environment in the parent directory:")
-    print("       python3 -m venv ../venv")
+    print("       python3 -m venv myvenv")
     print("\n    2. Activate it and install the required tools:")
-    print("       source ../venv/bin/activate")
+    print("       source myvenv/bin/activate")
     print("       pip install scapy NetfilterQueue")
     print("\n    3. Run the script using the specific venv python path:")
-    print("       sudo ../venv/bin/python3 dns_spoof.py\n")
+    print("       sudo ../myvenv/bin/python3 dns_spoof.py\n")
     
     sys.exit()
 
@@ -49,7 +49,7 @@ def iptable_flush():
 def parse_args():
     parser = argparse.ArgumentParser(description="DNS Spoofing Tool")
     parser.add_argument('-s', '--server', required=True, help="Server's IP address to redirect to")
-    parser.add_argument('-d', '--domain', required=True, default="vulnweb.com", help="Domains to spoof, separated by comma (ex. bing.com,google.com)")
+    parser.add_argument('-d', '--domain', required=False, default="vulnweb.com", help="Domains to spoof, separated by comma (ex. bing.com,google.com)")
     return parser.parse_args()
 
 
@@ -93,7 +93,6 @@ if __name__ == "__main__":
     queue = NetfilterQueue()
 
     try:
-        #Awesome lambda function to pass three arguments to Netfilterqueue
         queue.bind(1337, lambda packet: process_packet(packet, destination_server, target_domain))
         try:
             print("[*] Starting packet interception. Press Ctrl+C to stop.")
